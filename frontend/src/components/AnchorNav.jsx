@@ -6,7 +6,7 @@ export default function AnchorNav({ sections }) {
   }
 
   return (
-    <nav className="anchor-nav" aria-label="Navegacao das secoes do resultado">
+    <nav className="anchor-nav" aria-label="Navegação das seções do resultado">
       {sections.map((section) => (
         <a key={section.id} className="anchor-link" href={`#${section.id}`}>
           {section.label}

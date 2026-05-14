@@ -35,7 +35,7 @@ export default function PaginatedList({
             Anterior
           </button>
           <span className="pagination-status">
-            {startIndex}-{endIndex} de {safeItems.length} {itemLabel} | Pagina {page}/{totalPages}
+            {startIndex}-{endIndex} de {safeItems.length} {itemLabel} | Página {page}/{totalPages}
           </span>
           <button
             className="pagination-btn"
@@ -43,7 +43,7 @@ export default function PaginatedList({
             onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
             disabled={page === totalPages}
           >
-            Proxima
+            Próxima
           </button>
         </div>
       )}

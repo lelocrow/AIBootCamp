@@ -1,11 +1,11 @@
-import React from "react";
+﻿import React from "react";
 
 const STAGE_LABELS = {
   queued: "Documento enfileirado",
   uploading: "Enviando PDF para armazenamento",
   analyzing: "Executando analisador de IA",
   parsing: "Validando JSON de resposta",
-  completed: "Analise concluida",
+  completed: "Análise concluída",
   failed: "Falha no processamento",
 };
 
@@ -29,3 +29,4 @@ export default function LoadingSkeleton({ stage, progress }) {
     </div>
   );
 }
+

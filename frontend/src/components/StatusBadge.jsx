@@ -8,7 +8,7 @@ export default function StatusBadge({ status }) {
   };
 
   const normalizedStatus = typeof status === "string" ? status.toLowerCase() : "";
-  const config = map[normalizedStatus] || { label: status || "Nao informado", className: "status-pendente" };
+  const config = map[normalizedStatus] || { label: status || "Não informado", className: "status-pendente" };
 
   return <span className={`status-badge ${config.className}`}>{config.label}</span>;
 }

@@ -29,8 +29,8 @@ function parseResponseJson(text) {
 function getErrorByType(type, messageOverride) {
   const catalog = {
     invalid_file: {
-      title: "Arquivo invalido",
-      message: "Selecione apenas um PDF valido para continuar.",
+      title: "Arquivo inválido",
+      message: "Selecione apenas um PDF válido para continuar.",
     },
     file_too_large: {
       title: "Arquivo muito grande",
@@ -38,43 +38,43 @@ function getErrorByType(type, messageOverride) {
     },
     timeout: {
       title: "Tempo de processamento excedido",
-      message: "A analise demorou alem do esperado. Tente novamente com um arquivo menor.",
+      message: "A análise demorou além do esperado. Tente novamente com um arquivo menor.",
     },
     queue_full: {
       title: "Fila de processamento cheia",
-      message: "O servico esta com alta demanda no momento. Aguarde alguns segundos e tente novamente.",
+      message: "O serviço está com alta demanda no momento. Aguarde alguns segundos e tente novamente.",
     },
     api_unavailable: {
-      title: "API indisponivel",
-      message: "Nao foi possivel conectar ao servico agora. Verifique a conexao e tente novamente.",
+      title: "API indisponível",
+      message: "Não foi possível conectar ao serviço agora. Verifique a conexão e tente novamente.",
     },
     processing_error: {
       title: "Falha no processamento",
-      message: "Ocorreu um erro durante a analise do documento.",
+      message: "Ocorreu um erro durante a análise do documento.",
     },
     parse_error: {
       title: "Falha na leitura do resultado",
-      message: "A resposta da IA nao pode ser interpretada corretamente.",
+      message: "A resposta da IA não pode ser interpretada corretamente.",
     },
     dependency_error: {
-      title: "Dependencia indisponivel",
-      message: "O servico esta sem dependencias necessarias para analisar o arquivo.",
+      title: "Dependência indisponível",
+      message: "O serviço está sem dependências necessárias para analisar o arquivo.",
     },
     configuration_error: {
-      title: "Configuracao incompleta",
-      message: "Preencha as variaveis de ambiente obrigatorias antes de processar o arquivo.",
+      title: "Configuração incompleta",
+      message: "Preencha as variáveis de ambiente obrigatórias antes de processar o arquivo.",
     },
     server_error: {
       title: "Erro interno no servidor",
       message: "O servidor encontrou um erro inesperado.",
     },
     not_found: {
-      title: "Job nao encontrado",
-      message: "A referencia da analise expirou ou nao foi encontrada.",
+      title: "Job não encontrado",
+      message: "A referência da análise expirou ou não foi encontrada.",
     },
     unknown: {
       title: "Erro inesperado",
-      message: "Nao foi possivel concluir a operacao.",
+      message: "Não foi possível concluir a operação.",
     },
   };
 
@@ -212,19 +212,19 @@ export default function App() {
       setError(
         getErrorByType(
           "file_too_large",
-          `O limite atual e ${(MAX_FILE_SIZE_BYTES / 1024 / 1024).toFixed(0)}MB por arquivo.`
+          `O limite atual é ${(MAX_FILE_SIZE_BYTES / 1024 / 1024).toFixed(0)}MB por arquivo.`
         )
       );
       return;
     }
 
     if (firstError.code === "file-invalid-type") {
-      setError(getErrorByType("invalid_file", "Somente arquivos PDF sao aceitos."));
+      setError(getErrorByType("invalid_file", "Somente arquivos PDF são aceitos."));
       return;
     }
 
     if (firstError.code === "too-many-files") {
-      setError(getErrorByType("invalid_file", "Envie apenas um arquivo por analise."));
+      setError(getErrorByType("invalid_file", "Envie apenas um arquivo por análise."));
       return;
     }
 
@@ -265,7 +265,7 @@ export default function App() {
       }
 
       if (!response.ok || !payload?.success) {
-        throw handleBackendError(response.status, payload, "Nao foi possivel obter o resultado da analise.");
+        throw handleBackendError(response.status, payload, "Não foi possível obter o resultado da análise.");
       }
 
       setResult(payload);
@@ -299,7 +299,7 @@ export default function App() {
       const payload = parseResponseJson(await response.text());
 
       if (!response.ok || !payload?.success) {
-        throw handleBackendError(response.status, payload, "Nao foi possivel consultar o status da analise.");
+        throw handleBackendError(response.status, payload, "Não foi possível consultar o status da análise.");
       }
 
       const nextJob = payload.job || null;
@@ -370,18 +370,18 @@ export default function App() {
 
       const payload = parseResponseJson(await response.text());
       if (!response.ok || !payload?.success) {
-        throw handleBackendError(response.status, payload, "Nao foi possivel iniciar a analise.");
+        throw handleBackendError(response.status, payload, "Não foi possível iniciar a análise.");
       }
 
       if (!payload?.job?.job_id) {
-        throw getErrorByType("server_error", "A API nao retornou o identificador do job.");
+        throw getErrorByType("server_error", "A API não retornou o identificador do job.");
       }
 
       enqueueSucceeded = true;
       setJob(payload.job);
     } catch (err) {
       if (err?.name === "AbortError") {
-        setError(getErrorByType("timeout", "O servidor demorou para responder ao iniciar a analise."));
+        setError(getErrorByType("timeout", "O servidor demorou para responder ao iniciar a análise."));
       } else if (err?.type && err?.title) {
         setError(err);
       } else {
@@ -451,7 +451,7 @@ export default function App() {
                   <>
                     <p className="text-body-lg text-on-surface-variant mb-2">{file.name}</p>
                     <p className="text-body-md text-on-surface-variant mb-4">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB · pronto para analise
+                      {(file.size / 1024 / 1024).toFixed(2)} MB · pronto para análise
                     </p>
                   </>
                 ) : (
@@ -462,7 +462,7 @@ export default function App() {
                   </p>
                 )}
                 <span className="inline-flex items-center px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-label-md">
-                  Limite de 50MB · 1 arquivo por analise
+                  Limite de 50MB · 1 arquivo por análise
                 </span>
               </div>
 
@@ -473,7 +473,7 @@ export default function App() {
                     onClick={handleAnalyze}
                     type="button"
                   >
-                    Iniciar analise
+                    Iniciar análise
                   </button>
                 </div>
               )}
@@ -501,8 +501,8 @@ export default function App() {
                   </div>
                   <h4 className="text-body-lg font-semibold mb-2">Gemini</h4>
                   <p className="text-body-sm text-on-surface-variant">
-                    Analise profunda e contextual de contratos complexos, extraindo clausulas e identificando riscos com
-                    precisao.
+                    Análise profunda e contextual de contratos complexos, extraindo cláusulas e identificando riscos com
+                    precisão.
                   </p>
                 </div>
 
@@ -512,7 +512,7 @@ export default function App() {
                   </div>
                   <h4 className="text-body-lg font-semibold mb-2">Vertex AI</h4>
                   <p className="text-body-sm text-on-surface-variant">
-                    Infraestrutura escalavel e segura para processamento rapido de documentos, com foco em confiabilidade
+                    Infraestrutura escalável e segura para processamento rápido de documentos, com foco em confiabilidade
                     durante o bootcamp.
                   </p>
                 </div>
@@ -526,10 +526,10 @@ export default function App() {
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
               <div>
                 <h2 className="text-headline-md font-semibold text-on-surface">
-                  {result?.analysis?.document_title || result.file_name || "Resultado da analise"}
+                  {result?.analysis?.document_title || result.file_name || "Resultado da análise"}
                 </h2>
                 <p className="text-body-sm text-on-surface-variant mt-1">
-                  Arquivo: {result.file_name} · Perfil: {result.analyzer_profile_id || bootcampConfig?.analyzer?.active_profile_id || "Nao informado"}
+                  Arquivo: {result.file_name} · Perfil: {result.analyzer_profile_id || bootcampConfig?.analyzer?.active_profile_id || "Não informado"}
                 </p>
               </div>
               <button
@@ -537,11 +537,11 @@ export default function App() {
                 type="button"
                 onClick={handleReset}
               >
-                Nova analise
+                Nova análise
               </button>
             </div>
 
-            <h3 className="text-body-lg font-semibold mb-3">Campos extraidos</h3>
+            <h3 className="text-body-lg font-semibold mb-3">Campos extraídos</h3>
             <AnalysisCards analysis={result.analysis} />
 
             <h3 className="text-body-lg font-semibold mt-5 mb-2">JSON completo</h3>
@@ -589,3 +589,4 @@ export default function App() {
     </div>
   );
 }
+

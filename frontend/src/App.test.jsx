@@ -24,7 +24,7 @@ function buildConfigPayload() {
       analyzer: {
         active_profile_id: "contract_risk_guard",
         prompt: "Prompt de teste",
-        expected_fields: [{ name: "document_title", type: "string", description: "Titulo do documento" }],
+        expected_fields: [{ name: "document_title", type: "string", description: "Título do documento" }],
         response_template: { document_title: "string" },
       },
     },
@@ -39,7 +39,7 @@ function buildResultResponse() {
     analysis: {
       document_title: "Contrato Exemplo",
       executive_summary: "Resumo de teste.",
-      risk_alerts: [{ level: "high", category: "legal", description: "Risco de multa", mitigation: "Revisar clausula" }],
+      risk_alerts: [{ level: "high", category: "legal", description: "Risco de multa", mitigation: "Revisar cláusula" }],
     },
     job: {
       job_id: "job-123",
@@ -68,7 +68,7 @@ describe("App", () => {
         };
       }
 
-      throw new Error(`URL nao esperada no teste: ${url}`);
+      throw new Error(`URL não esperada no teste: ${url}`);
     });
 
     render(<App />);
@@ -80,7 +80,7 @@ describe("App", () => {
     expect(screen.getByText(/vertex ai/i)).toBeInTheDocument();
   });
 
-  it("enfileira e processa a analise assincrona com polling", async () => {
+  it("enfileira e processa a análise assíncrona com polling", async () => {
     const resultPayload = buildResultResponse();
     const configPayload = buildConfigPayload();
 
@@ -138,13 +138,13 @@ describe("App", () => {
         };
       }
 
-      throw new Error(`URL nao esperada no teste: ${url}`);
+      throw new Error(`URL não esperada no teste: ${url}`);
     });
 
     render(<App />);
     selectPdfFile();
 
-    fireEvent.click(screen.getByRole("button", { name: /iniciar analise/i }));
+    fireEvent.click(screen.getByRole("button", { name: /iniciar análise/i }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
@@ -160,7 +160,7 @@ describe("App", () => {
     expect(screen.getByText(/json completo/i)).toBeInTheDocument();
   });
 
-  it("mostra erro tipado quando a API retorna arquivo invalido", async () => {
+  it("mostra erro tipado quando a API retorna arquivo inválido", async () => {
     const configPayload = buildConfigPayload();
 
     global.fetch = jest.fn(async (url) => {
@@ -176,20 +176,21 @@ describe("App", () => {
         return {
           ok: false,
           status: 400,
-          text: async () => JSON.stringify({ error_type: "invalid_file", error: "Apenas PDF e suportado." }),
+          text: async () => JSON.stringify({ error_type: "invalid_file", error: "Apenas PDF é suportado." }),
         };
       }
 
-      throw new Error(`URL nao esperada no teste: ${url}`);
+      throw new Error(`URL não esperada no teste: ${url}`);
     });
 
     render(<App />);
     selectPdfFile();
 
-    fireEvent.click(screen.getByRole("button", { name: /iniciar analise/i }));
+    fireEvent.click(screen.getByRole("button", { name: /iniciar análise/i }));
 
-    expect(await screen.findByText(/arquivo invalido/i)).toBeInTheDocument();
-    expect(screen.getByText(/apenas pdf e suportado/i)).toBeInTheDocument();
+    expect(await screen.findByText(/arquivo inválido/i)).toBeInTheDocument();
+    expect(screen.getByText(/apenas pdf é suportado/i)).toBeInTheDocument();
   });
 });
+
 

@@ -234,16 +234,10 @@ gcloud builds submit --tag $TAG
 
 Use o mesmo `SERVICE_NAME` definido no `cloudrun.env`.
 
-Linux/macOS (bash):
+Linux/macOS e PowerShell:
 
 ```bash
 gcloud run deploy "$SERVICE_NAME" --image "$TAG" --region "$REGION" --platform managed --allow-unauthenticated --port 8080 --cpu 2 --memory 2Gi --concurrency 20 --min-instances 0 --max-instances 1 --no-cpu-throttling --timeout 3600 --env-vars-file cloudrun.env
-```
-
-Windows PowerShell:
-
-```powershell
-gcloud run deploy $SERVICE_NAME --image $TAG --region $REGION --platform managed --allow-unauthenticated --port 8080 --cpu 2 --memory 2Gi --concurrency 20 --min-instances 0 --max-instances 1 --no-cpu-throttling --timeout 3600 --env-vars-file cloudrun.env
 ```
 
 Observacao importante:
@@ -252,7 +246,7 @@ Observacao importante:
 
 ## 7) Validacao pos-deploy
 
-### 8.1 Obter URL do servico
+### 7.1 Obter URL do servico
 
 ```bash
 SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region "$REGION" --format='value(status.url)')
@@ -266,14 +260,14 @@ $SERVICE_URL=gcloud run services describe $SERVICE_NAME --region $REGION --forma
 Write-Output $SERVICE_URL
 ```
 
-### 8.2 Testar endpoints no Cloud Run
+### 7.2 Testar endpoints no Cloud Run
 
 ```bash
 curl "$SERVICE_URL/api/health"
 curl "$SERVICE_URL/api/config"
 ```
 
-### 8.3 Teste funcional completo
+### 7.3 Teste funcional completo
 
 1. Abrir `SERVICE_URL` no navegador.
 2. Fazer upload de um PDF.
