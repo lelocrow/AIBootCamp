@@ -69,6 +69,8 @@ def test_config_endpoint_returns_profile_and_prompt():
     assert "participant_name" in config
     assert "analyzer" in config
     assert "prompt" in config["analyzer"]
+    assert "prompt_reference_context" in config["analyzer"]
+    assert "date_iso" in config["analyzer"]["prompt_reference_context"]
     assert "expected_fields" in config["analyzer"]
     assert len(config["analyzer"]["expected_fields"]) > 0
 
@@ -224,6 +226,10 @@ def test_process_analysis_job_success_with_mocks(monkeypatch):
     class FakeModel:
         def generate_content(self, _prompt_parts, generation_config=None):
             assert generation_config["max_output_tokens"] == main.MAX_OUTPUT_TOKENS
+            assert len(_prompt_parts) == 2
+            runtime_prompt = _prompt_parts[1]
+            assert "Data de referencia atual" in runtime_prompt
+            assert "Timezone de referencia efetiva" in runtime_prompt
             return SimpleNamespace(
                 text='{"document_title":"Documento Teste","executive_summary":"ok"}'
             )

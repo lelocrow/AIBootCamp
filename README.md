@@ -171,6 +171,7 @@ MAX_STORED_JOBS=300
 JOB_RETENTION_SECONDS=3600
 MAX_OUTPUT_TOKENS=8192
 GENERATION_TEMPERATURE=0.1
+PROMPT_REFERENCE_TIMEZONE=America/Sao_Paulo
 ```
 
 ### 4.3 Validacao obrigatoria antes do deploy
@@ -180,6 +181,7 @@ Confirme:
 - `VERTEX_PROJECT_ID` = mesmo `PROJECT_ID` configurado no gcloud
 - `GCS_BUCKET_NAME` = bucket criado na etapa 3.6
 - `ANALYZER_PROFILE_ID` = um perfil existente em `backend/analyzer_profiles.py`
+- `PROMPT_REFERENCE_TIMEZONE` = timezone valida (ex.: `America/Sao_Paulo`) para ancorar a data real no prompt da IA
 
 ### 4.4 Logo obrigatoria da empresa convidada
 
@@ -238,6 +240,7 @@ No `/api/config`, confirme:
 - `participant_name`
 - `analyzer.active_profile_id`
 - `analyzer.prompt`
+- `analyzer.prompt_reference_context.date_iso`
 - `analyzer.expected_fields`
 
 ## 6) Build e push da imagem para Artifact Registry

@@ -16,6 +16,12 @@ from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
 
 try:
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+except ImportError:
+    ZoneInfo = None
+    ZoneInfoNotFoundError = Exception
+
+try:
     from .analyzer_profiles import (
         DEFAULT_ANALYZER_PROFILE_ID,
         get_profile_or_default,
@@ -92,6 +98,7 @@ MAX_STORED_JOBS = _read_int_env("MAX_STORED_JOBS", 300)
 MAX_QUEUE_SIZE = max(1, _read_int_env("MAX_QUEUE_SIZE", 20))
 MAX_OUTPUT_TOKENS = max(512, _read_int_env("MAX_OUTPUT_TOKENS", 8192))
 GENERATION_TEMPERATURE = max(0.0, min(1.0, _read_float_env("GENERATION_TEMPERATURE", 0.1)))
+PROMPT_REFERENCE_TIMEZONE = os.getenv("PROMPT_REFERENCE_TIMEZONE", "UTC").strip() or "UTC"
 WORKER_QUEUE_POLL_SECONDS = max(0.1, _read_float_env("WORKER_QUEUE_POLL_SECONDS", 0.5))
 WORKER_SHUTDOWN_TIMEOUT_SECONDS = max(1.0, _read_float_env("WORKER_SHUTDOWN_TIMEOUT_SECONDS", 8.0))
 QUEUE_RETRY_AFTER_SECONDS = max(1, _read_int_env("QUEUE_RETRY_AFTER_SECONDS", 10))
@@ -138,6 +145,13 @@ def _runtime_configuration_warnings():
         warnings.append(
             f"ANALYZER_PROFILE_ID '{ANALYZER_PROFILE_ID}' nao encontrado. Usando '{ACTIVE_PROFILE_ID}'."
         )
+    if ZoneInfo is not None:
+        try:
+            ZoneInfo(PROMPT_REFERENCE_TIMEZONE)
+        except ZoneInfoNotFoundError:
+            warnings.append(
+                f"PROMPT_REFERENCE_TIMEZONE '{PROMPT_REFERENCE_TIMEZONE}' nao encontrada. Usando UTC no prompt."
+            )
     return warnings
 
 
@@ -154,6 +168,53 @@ def _ensure_runtime_configuration():
             "Configuracao obrigatoria ausente para processar analise: "
             f"{missing_text}. Configure no arquivo de env do participante/empresa."
         )
+
+
+def _resolve_prompt_reference_datetime():
+    now_utc = datetime.now(timezone.utc)
+
+    if ZoneInfo is None:
+        return {
+            "requested_timezone": PROMPT_REFERENCE_TIMEZONE,
+            "effective_timezone": "UTC",
+            "source": "zoneinfo_unavailable",
+            "date_iso": now_utc.date().isoformat(),
+            "datetime_iso": now_utc.isoformat(),
+        }
+
+    try:
+        tzinfo = ZoneInfo(PROMPT_REFERENCE_TIMEZONE)
+        now_ref = now_utc.astimezone(tzinfo)
+        return {
+            "requested_timezone": PROMPT_REFERENCE_TIMEZONE,
+            "effective_timezone": PROMPT_REFERENCE_TIMEZONE,
+            "source": "zoneinfo",
+            "date_iso": now_ref.date().isoformat(),
+            "datetime_iso": now_ref.isoformat(),
+        }
+    except ZoneInfoNotFoundError:
+        return {
+            "requested_timezone": PROMPT_REFERENCE_TIMEZONE,
+            "effective_timezone": "UTC",
+            "source": "invalid_timezone_fallback_utc",
+            "date_iso": now_utc.date().isoformat(),
+            "datetime_iso": now_utc.isoformat(),
+        }
+
+
+def _build_runtime_analysis_prompt():
+    temporal_context = _resolve_prompt_reference_datetime()
+    return (
+        f"{ANALYSIS_PROMPT}\n\n"
+        "Contexto temporal obrigatorio para esta analise:\n"
+        f"- Data de referencia atual: {temporal_context['date_iso']}\n"
+        f"- Data/hora de referencia: {temporal_context['datetime_iso']}\n"
+        f"- Timezone de referencia efetiva: {temporal_context['effective_timezone']}\n"
+        "Regras temporais obrigatorias:\n"
+        "- Use essa data de referencia para qualquer validacao de passado/presente/futuro.\n"
+        "- Nao marque como futuro uma data anterior a data de referencia.\n"
+        "- Se houver ambiguidade de data no documento, sinalize como 'necessita validacao'.\n"
+    )
 
 
 def _get_model():
@@ -364,9 +425,10 @@ def _process_analysis_job(job_id):
         _set_job_stage(job_id, "analyzing")
         model = _get_model()
         pdf_part = Part.from_uri(uri=gcs_uri, mime_type="application/pdf")
+        runtime_prompt = _build_runtime_analysis_prompt()
 
         response = model.generate_content(
-            [pdf_part, ANALYSIS_PROMPT],
+            [pdf_part, runtime_prompt],
             generation_config={
                 "temperature": GENERATION_TEMPERATURE,
                 "max_output_tokens": MAX_OUTPUT_TOKENS,
@@ -535,6 +597,7 @@ def _queue_snapshot():
 
 
 def _public_runtime_config():
+    temporal_context = _resolve_prompt_reference_datetime()
     return {
         "service_name": SERVICE_NAME,
         "organization_name": BOOTCAMP_ORG_NAME,
@@ -548,7 +611,8 @@ def _public_runtime_config():
             "active_profile_id": ACTIVE_PROFILE_ID,
             "active_profile_name": ACTIVE_PROFILE["name"],
             "active_profile_description": ACTIVE_PROFILE["description"],
-            "prompt": ANALYSIS_PROMPT,
+            "prompt": _build_runtime_analysis_prompt(),
+            "prompt_reference_context": temporal_context,
             "expected_fields": ACTIVE_PROFILE["expected_fields"],
             "response_template": ACTIVE_PROFILE["response_template"],
             "available_profiles": list_profiles_summary(),
