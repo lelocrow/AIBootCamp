@@ -242,16 +242,36 @@ No `/api/config`, confirme:
 
 ## 6) Build e push da imagem para Artifact Registry
 
+Linux/macOS (bash):
+
 ```bash
-gcloud builds submit --tag "$REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE_NAME:latest"
+TAG="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:latest"
+echo "$TAG"
+gcloud builds submit --tag "$TAG"
+```
+
+Windows PowerShell:
+
+```powershell
+$TAG = "{0}-docker.pkg.dev/{1}/{2}/{3}:latest" -f $REGION, $PROJECT_ID, $REPO_NAME, $IMAGE_NAME
+Write-Output $TAG
+gcloud builds submit --tag $TAG
 ```
 
 ## 7) Deploy no Cloud Run
 
 Use o mesmo `SERVICE_NAME` definido no `cloudrun.env`.
 
+Linux/macOS (bash):
+
 ```bash
-gcloud run deploy "$SERVICE_NAME" --image "$REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE_NAME:latest" --region "$REGION" --platform managed --allow-unauthenticated --port 8080 --cpu 2 --memory 2Gi --concurrency 20 --min-instances 0 --max-instances 1 --no-cpu-throttling --timeout 3600 --env-vars-file cloudrun.env
+gcloud run deploy "$SERVICE_NAME" --image "$TAG" --region "$REGION" --platform managed --allow-unauthenticated --port 8080 --cpu 2 --memory 2Gi --concurrency 20 --min-instances 0 --max-instances 1 --no-cpu-throttling --timeout 3600 --env-vars-file cloudrun.env
+```
+
+Windows PowerShell:
+
+```powershell
+gcloud run deploy $SERVICE_NAME --image $TAG --region $REGION --platform managed --allow-unauthenticated --port 8080 --cpu 2 --memory 2Gi --concurrency 20 --min-instances 0 --max-instances 1 --no-cpu-throttling --timeout 3600 --env-vars-file cloudrun.env
 ```
 
 Observacao importante:
