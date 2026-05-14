@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { LoadingSkeleton } from "./components";
 import "./app.css";
@@ -399,20 +399,10 @@ export default function App() {
     resetAnalysisState();
   };
 
-  const analyzerInfo = bootcampConfig?.analyzer || null;
-  const warnings = bootcampConfig?.warnings || [];
-
-  const responseTemplatePreview = useMemo(() => {
-    if (!analyzerInfo?.response_template) {
-      return "{}";
-    }
-    return JSON.stringify(analyzerInfo.response_template, null, 2);
-  }, [analyzerInfo]);
-
   return (
     <div className="bg-background text-on-background min-h-screen flex flex-col">
       <nav className="bg-primary-container text-on-primary-container border-b border-outline-variant shadow-sm w-full z-50">
-        <div className="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-4 max-w-max-width mx-auto">
+        <div className="flex items-center w-full px-margin-mobile md:px-margin-desktop py-4 max-w-max-width mx-auto">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-lg bg-surface-container-high overflow-hidden flex items-center justify-center">
@@ -436,14 +426,6 @@ export default function App() {
                 </span>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="transition-transform text-on-primary-container/70 hover:text-on-primary-container" type="button" aria-label="Notificacoes">
-              <span className="material-symbols-outlined">notifications</span>
-            </button>
-            <button className="transition-transform text-on-primary-container/70 hover:text-on-primary-container" type="button" aria-label="Perfil">
-              <span className="material-symbols-outlined">account_circle</span>
-            </button>
           </div>
         </div>
       </nav>
@@ -539,74 +521,6 @@ export default function App() {
           </>
         )}
 
-        <section className="w-full max-w-4xl bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm">
-          <h3 className="text-headline-md font-semibold mb-3">Config do Analisador Ativo</h3>
-          <p className="text-body-sm text-on-surface-variant mb-3">
-            Este bloco mostra exatamente o prompt enviado para a IA e os campos esperados no retorno.
-          </p>
-          <div className="app-info-grid">
-            <div className="bg-surface border border-outline-variant rounded-lg p-3">
-              <p className="text-body-sm"><strong>Empresa:</strong> {bootcampConfig?.organization_name || "Nao definida"}</p>
-              <p className="text-body-sm"><strong>Participante:</strong> {bootcampConfig?.participant_name || "Nao definido"}</p>
-              <p className="text-body-sm"><strong>Perfil:</strong> {analyzerInfo?.active_profile_id || "Nao carregado"}</p>
-            </div>
-            <div className="bg-surface border border-outline-variant rounded-lg p-3">
-              <p className="text-body-sm"><strong>Vertex:</strong> {bootcampConfig?.vertex_project_configured ? "ok" : "pendente"}</p>
-              <p className="text-body-sm"><strong>Bucket:</strong> {bootcampConfig?.bucket_configured ? "ok" : "pendente"}</p>
-              <p className="text-body-sm"><strong>Regiao:</strong> {bootcampConfig?.vertex_location || "us-central1"}</p>
-            </div>
-          </div>
-
-          {warnings.length > 0 && (
-            <div className="app-warning-box" role="alert">
-              <strong>Atencao:</strong>
-              <ul>
-                {warnings.map((warning) => (
-                  <li key={warning}>{warning}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="mt-4">
-            <h4 className="text-body-md font-semibold mb-2">Prompt enviado para a IA</h4>
-            <pre className="app-code-preview">{analyzerInfo?.prompt || "Carregando prompt..."}</pre>
-          </div>
-
-          <div className="mt-4">
-            <h4 className="text-body-md font-semibold mb-2">Campos esperados no retorno</h4>
-            {analyzerInfo?.expected_fields?.length > 0 ? (
-              <div className="app-fields-table-wrap">
-                <table className="app-fields-table">
-                  <thead>
-                    <tr>
-                      <th>Campo</th>
-                      <th>Tipo</th>
-                      <th>Descricao</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {analyzerInfo.expected_fields.map((field) => (
-                      <tr key={field.name}>
-                        <td>{field.name}</td>
-                        <td>{field.type}</td>
-                        <td>{field.description}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-body-sm text-on-surface-variant">Campos ainda nao carregados.</p>
-            )}
-          </div>
-
-          <div className="mt-4">
-            <h4 className="text-body-md font-semibold mb-2">Template de resposta JSON</h4>
-            <pre className="app-code-preview">{responseTemplatePreview}</pre>
-          </div>
-        </section>
-
         {result && (
           <section className="w-full max-w-4xl bg-surface-container-lowest border border-outline-variant rounded-xl p-md shadow-sm">
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
@@ -615,7 +529,7 @@ export default function App() {
                   {result?.analysis?.document_title || result.file_name || "Resultado da analise"}
                 </h2>
                 <p className="text-body-sm text-on-surface-variant mt-1">
-                  Arquivo: {result.file_name} · Perfil: {result.analyzer_profile_id || analyzerInfo?.active_profile_id}
+                  Arquivo: {result.file_name} · Perfil: {result.analyzer_profile_id || bootcampConfig?.analyzer?.active_profile_id || "Nao informado"}
                 </p>
               </div>
               <button
@@ -653,12 +567,25 @@ export default function App() {
             </div>
           </div>
           <div className="flex flex-wrap justify-center gap-6">
-            <span className="text-label-md text-on-surface-variant/80">Google Cloud Platform</span>
-            <span className="text-label-md text-on-surface-variant/80">Gemini AI</span>
+            <a
+              className="text-label-md text-on-surface-variant/80 hover:text-primary transition-colors"
+              href="https://console.cloud.google.com/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Google Cloud Platform
+            </a>
+            <a
+              className="text-label-md text-on-surface-variant/80 hover:text-primary transition-colors"
+              href="https://gemini.google.com/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Gemini AI
+            </a>
           </div>
         </div>
       </footer>
     </div>
   );
 }
-

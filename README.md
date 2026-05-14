@@ -22,7 +22,6 @@ Ao final, cada participante tera:
 Instalar e validar localmente:
 
 - `git`
-- `docker`
 - `gcloud` (Google Cloud CLI)
 - Conta GCP com permissao para Cloud Run, Cloud Build, Artifact Registry, Vertex AI e Cloud Storage
 
@@ -30,7 +29,6 @@ Comandos de validacao:
 
 ```bash
 git --version
-docker --version
 gcloud --version
 ```
 
@@ -214,36 +212,7 @@ Perfis prontos:
 - `policy_compliance_reviewer`
 - `customizado` (perfil base para criar manualmente seu proprio analisador)
 
-## 5) Teste local com Docker (fortemente recomendado)
-
-### 5.1 Build local da imagem
-
-```bash
-docker build -t ai-bootcamp-analyzer:local .
-```
-
-### 5.2 Subir local com env do participante
-
-```bash
-docker run --rm -p 8080:8080 --env-file cloudrun.env ai-bootcamp-analyzer:local
-```
-
-### 5.3 Validar endpoints locais
-
-```bash
-curl http://localhost:8080/api/health
-curl http://localhost:8080/api/config
-```
-
-No `/api/config`, confirme:
-- `organization_name`
-- `participant_name`
-- `analyzer.active_profile_id`
-- `analyzer.prompt`
-- `analyzer.prompt_reference_context.date_iso`
-- `analyzer.expected_fields`
-
-## 6) Build e push da imagem para Artifact Registry
+## 5) Build e push da imagem para Artifact Registry
 
 Linux/macOS (bash):
 
@@ -261,7 +230,7 @@ Write-Output $TAG
 gcloud builds submit --tag $TAG
 ```
 
-## 7) Deploy no Cloud Run
+## 6) Deploy no Cloud Run
 
 Use o mesmo `SERVICE_NAME` definido no `cloudrun.env`.
 
@@ -281,7 +250,7 @@ Observacao importante:
 - Este projeto usa fila em memoria no proprio container.
 - Mantenha `--max-instances=1` para evitar inconsistencias de estado entre instancias.
 
-## 8) Validacao pos-deploy
+## 7) Validacao pos-deploy
 
 ### 8.1 Obter URL do servico
 
@@ -310,14 +279,14 @@ curl "$SERVICE_URL/api/config"
 2. Fazer upload de um PDF.
 3. Confirmar que a analise termina e retorna JSON.
 
-## 9) Onde personalizar prompt e campos esperados
+## 8) Onde personalizar prompt e campos esperados
 
 Arquivos principais:
 - Prompt, schema e perfis: `backend/analyzer_profiles.py`
 - Carregamento de env e perfil ativo: `backend/main.py`
 - Exibicao didatica de prompt/campos na interface: `frontend/src/App.jsx`
 
-## 10) Erros comuns e como corrigir
+## 9) Erros comuns e como corrigir
 
 ### Erro: `403` em Vertex AI
 
@@ -352,14 +321,14 @@ Correcao:
 - testar com arquivo menor
 - revisar limite `MAX_UPLOAD_SIZE_MB`
 
-## 11) Checklist final do participante
+## 10) Checklist final do participante
 
 1. Clonei o repositorio e entrei na pasta correta.
 2. Configurei `PROJECT_ID`, `REGION`, `REPO_NAME`, `BUCKET_NAME`.
 3. Habilitei as APIs necessarias.
 4. Criei Artifact Registry e bucket.
 5. Criei e preenchi `cloudrun.env` sem placeholders.
-6. Validei `/api/config` localmente.
+6. Validei `/api/config` na URL publica.
 7. Fiz build/push da imagem.
 8. Fiz deploy no Cloud Run.
 9. Testei `/api/health` e `/api/config` na URL publica.

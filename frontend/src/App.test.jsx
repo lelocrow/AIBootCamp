@@ -56,7 +56,7 @@ describe("App", () => {
     jest.resetAllMocks();
   });
 
-  it("renderiza a tela inicial de upload e painel de configuracao", async () => {
+  it("renderiza a tela inicial de upload com cards de tecnologia", async () => {
     const configPayload = buildConfigPayload();
 
     global.fetch = jest.fn(async (url) => {
@@ -75,8 +75,9 @@ describe("App", () => {
 
     expect(screen.getByText(/upload/i)).toBeInTheDocument();
     expect(screen.getByText(/arraste e solte um arquivo pdf aqui/i)).toBeInTheDocument();
-    expect(await screen.findByText(/config do analisador ativo/i)).toBeInTheDocument();
-    expect(screen.getByText(/prompt enviado para a ia/i)).toBeInTheDocument();
+    expect(await screen.findByText(/tecnologia de ponta/i)).toBeInTheDocument();
+    expect(screen.getByText(/gemini/i)).toBeInTheDocument();
+    expect(screen.getByText(/vertex ai/i)).toBeInTheDocument();
   });
 
   it("enfileira e processa a analise assincrona com polling", async () => {
