@@ -1,0 +1,11 @@
+# Arquivo de controle do que o gcloud envia para o Cloud Build.
+# Mantemos as mesmas regras do .gitignore, mas re-incluimos o logo local.
+
+.gcloudignore
+.git
+.gitignore
+
+#!include:.gitignore
+
+# O logo continua fora do Git, mas entra no pacote de build/deploy.
+!frontend/public/assets/logo.png
