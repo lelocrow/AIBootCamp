@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Node
+frontend/node_modules/
+frontend/build/
+
+# Local envs and secrets
+.env
+.env.*
+cloudrun.env
+*.local.env
+
+# OS
+.DS_Store
+Thumbs.db
