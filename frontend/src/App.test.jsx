@@ -157,7 +157,6 @@ describe("App", () => {
     });
 
     expect(await screen.findByText("Contrato Exemplo")).toBeInTheDocument();
-    expect(screen.getByText(/json completo/i)).toBeInTheDocument();
   });
 
   it("mostra erro tipado quando a API retorna arquivo inválido", async () => {

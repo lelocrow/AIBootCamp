@@ -543,9 +543,6 @@ export default function App() {
 
             <h3 className="text-body-lg font-semibold mb-3">Campos extraídos</h3>
             <AnalysisCards analysis={result.analysis} />
-
-            <h3 className="text-body-lg font-semibold mt-5 mb-2">JSON completo</h3>
-            <pre className="app-code-preview">{JSON.stringify(result.analysis || {}, null, 2)}</pre>
           </section>
         )}
       </main>

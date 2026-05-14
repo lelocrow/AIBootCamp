@@ -130,8 +130,18 @@ body {
 
 .app-result-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
+}
+
+.app-result-grid > article {
+  min-width: 0;
+}
+
+.app-result-grid p,
+.app-result-grid h4 {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .app-info-grid {
