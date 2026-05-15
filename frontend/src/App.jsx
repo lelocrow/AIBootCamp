@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { LoadingSkeleton } from "./components";
 import "./app.css";
@@ -29,8 +29,8 @@ function parseResponseJson(text) {
 function getErrorByType(type, messageOverride) {
   const catalog = {
     invalid_file: {
-      title: "Arquivo inválido",
-      message: "Selecione apenas um PDF válido para continuar.",
+      title: "Arquivo inv\u00e1lido",
+      message: "Selecione apenas um PDF v\u00e1lido para continuar.",
     },
     file_too_large: {
       title: "Arquivo muito grande",
@@ -38,43 +38,43 @@ function getErrorByType(type, messageOverride) {
     },
     timeout: {
       title: "Tempo de processamento excedido",
-      message: "A análise demorou além do esperado. Tente novamente com um arquivo menor.",
+      message: "A an\u00e1lise demorou al\u00e9m do esperado. Tente novamente com um arquivo menor.",
     },
     queue_full: {
       title: "Fila de processamento cheia",
-      message: "O serviço está com alta demanda no momento. Aguarde alguns segundos e tente novamente.",
+      message: "O servi\u00e7o est\u00e1 com alta demanda no momento. Aguarde alguns segundos e tente novamente.",
     },
     api_unavailable: {
-      title: "API indisponível",
-      message: "Não foi possível conectar ao serviço agora. Verifique a conexão e tente novamente.",
+      title: "API indispon\u00edvel",
+      message: "N\u00e3o foi poss\u00edvel conectar ao servi\u00e7o agora. Verifique a conex\u00e3o e tente novamente.",
     },
     processing_error: {
       title: "Falha no processamento",
-      message: "Ocorreu um erro durante a análise do documento.",
+      message: "Ocorreu um erro durante a an\u00e1lise do documento.",
     },
     parse_error: {
       title: "Falha na leitura do resultado",
-      message: "A resposta da IA não pode ser interpretada corretamente.",
+      message: "A resposta da IA n\u00e3o pode ser interpretada corretamente.",
     },
     dependency_error: {
-      title: "Dependência indisponível",
-      message: "O serviço está sem dependências necessárias para analisar o arquivo.",
+      title: "Depend\u00eancia indispon\u00edvel",
+      message: "O servi\u00e7o est\u00e1 sem depend\u00eancias necess\u00e1rias para analisar o arquivo.",
     },
     configuration_error: {
-      title: "Configuração incompleta",
-      message: "Preencha as variáveis de ambiente obrigatórias antes de processar o arquivo.",
+      title: "Configura\u00e7\u00e3o incompleta",
+      message: "Preencha as vari\u00e1veis de ambiente obrigat\u00f3rias antes de processar o arquivo.",
     },
     server_error: {
       title: "Erro interno no servidor",
       message: "O servidor encontrou um erro inesperado.",
     },
     not_found: {
-      title: "Job não encontrado",
-      message: "A referência da análise expirou ou não foi encontrada.",
+      title: "Job n\u00e3o encontrado",
+      message: "A refer\u00eancia da an\u00e1lise expirou ou n\u00e3o foi encontrada.",
     },
     unknown: {
       title: "Erro inesperado",
-      message: "Não foi possível concluir a operação.",
+      message: "N\u00e3o foi poss\u00edvel concluir a opera\u00e7\u00e3o.",
     },
   };
 
@@ -212,19 +212,19 @@ export default function App() {
       setError(
         getErrorByType(
           "file_too_large",
-          `O limite atual é ${(MAX_FILE_SIZE_BYTES / 1024 / 1024).toFixed(0)}MB por arquivo.`
+          `O limite atual \u00e9 ${(MAX_FILE_SIZE_BYTES / 1024 / 1024).toFixed(0)}MB por arquivo.`
         )
       );
       return;
     }
 
     if (firstError.code === "file-invalid-type") {
-      setError(getErrorByType("invalid_file", "Somente arquivos PDF são aceitos."));
+      setError(getErrorByType("invalid_file", "Somente arquivos PDF s\u00e3o aceitos."));
       return;
     }
 
     if (firstError.code === "too-many-files") {
-      setError(getErrorByType("invalid_file", "Envie apenas um arquivo por análise."));
+      setError(getErrorByType("invalid_file", "Envie apenas um arquivo por an\u00e1lise."));
       return;
     }
 
@@ -265,7 +265,7 @@ export default function App() {
       }
 
       if (!response.ok || !payload?.success) {
-        throw handleBackendError(response.status, payload, "Não foi possível obter o resultado da análise.");
+        throw handleBackendError(response.status, payload, "N\u00e3o foi poss\u00edvel obter o resultado da an\u00e1lise.");
       }
 
       setResult(payload);
@@ -299,7 +299,7 @@ export default function App() {
       const payload = parseResponseJson(await response.text());
 
       if (!response.ok || !payload?.success) {
-        throw handleBackendError(response.status, payload, "Não foi possível consultar o status da análise.");
+        throw handleBackendError(response.status, payload, "N\u00e3o foi poss\u00edvel consultar o status da an\u00e1lise.");
       }
 
       const nextJob = payload.job || null;
@@ -370,18 +370,18 @@ export default function App() {
 
       const payload = parseResponseJson(await response.text());
       if (!response.ok || !payload?.success) {
-        throw handleBackendError(response.status, payload, "Não foi possível iniciar a análise.");
+        throw handleBackendError(response.status, payload, "N\u00e3o foi poss\u00edvel iniciar a an\u00e1lise.");
       }
 
       if (!payload?.job?.job_id) {
-        throw getErrorByType("server_error", "A API não retornou o identificador do job.");
+        throw getErrorByType("server_error", "A API n\u00e3o retornou o identificador do job.");
       }
 
       enqueueSucceeded = true;
       setJob(payload.job);
     } catch (err) {
       if (err?.name === "AbortError") {
-        setError(getErrorByType("timeout", "O servidor demorou para responder ao iniciar a análise."));
+        setError(getErrorByType("timeout", "O servidor demorou para responder ao iniciar a an\u00e1lise."));
       } else if (err?.type && err?.title) {
         setError(err);
       } else {
@@ -451,7 +451,7 @@ export default function App() {
                   <>
                     <p className="text-body-lg text-on-surface-variant mb-2">{file.name}</p>
                     <p className="text-body-md text-on-surface-variant mb-4">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB · pronto para análise
+                      {`${(file.size / 1024 / 1024).toFixed(2)} MB \u00b7 pronto para an\u00e1lise`}
                     </p>
                   </>
                 ) : (
@@ -462,7 +462,7 @@ export default function App() {
                   </p>
                 )}
                 <span className="inline-flex items-center px-4 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-label-md">
-                  Limite de 50MB · 1 arquivo por análise
+                  {"Limite de 50MB \u00b7 1 arquivo por an\u00e1lise"}
                 </span>
               </div>
 
@@ -473,7 +473,7 @@ export default function App() {
                     onClick={handleAnalyze}
                     type="button"
                   >
-                    Iniciar análise
+                    {"Iniciar an\u00e1lise"}
                   </button>
                 </div>
               )}
@@ -501,8 +501,8 @@ export default function App() {
                   </div>
                   <h4 className="text-body-lg font-semibold mb-2">Gemini</h4>
                   <p className="text-body-sm text-on-surface-variant">
-                    Análise profunda e contextual de contratos complexos, extraindo cláusulas e identificando riscos com
-                    precisão.
+                    {"An\u00e1lise profunda e contextual de contratos complexos, extraindo cl\u00e1usulas e identificando riscos com "}
+                    {"precis\u00e3o."}
                   </p>
                 </div>
 
@@ -512,8 +512,7 @@ export default function App() {
                   </div>
                   <h4 className="text-body-lg font-semibold mb-2">Vertex AI</h4>
                   <p className="text-body-sm text-on-surface-variant">
-                    Infraestrutura escalável e segura para processamento rápido de documentos, com foco em confiabilidade
-                    durante o bootcamp.
+                    {"Infraestrutura escal\u00e1vel e segura para processamento r\u00e1pido de documentos, com foco em confiabilidade durante o bootcamp."}
                   </p>
                 </div>
               </div>
@@ -526,10 +525,10 @@ export default function App() {
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
               <div>
                 <h2 className="text-headline-md font-semibold text-on-surface">
-                  {result?.analysis?.document_title || result.file_name || "Resultado da análise"}
+                  {result?.analysis?.document_title || result.file_name || "Resultado da an\u00e1lise"}
                 </h2>
                 <p className="text-body-sm text-on-surface-variant mt-1">
-                  Arquivo: {result.file_name} · Perfil: {result.analyzer_profile_id || bootcampConfig?.analyzer?.active_profile_id || "Não informado"}
+                  {`Arquivo: ${result.file_name} \u00b7 Perfil: ${result.analyzer_profile_id || bootcampConfig?.analyzer?.active_profile_id || "N\u00e3o informado"}`}
                 </p>
               </div>
               <button
@@ -537,11 +536,11 @@ export default function App() {
                 type="button"
                 onClick={handleReset}
               >
-                Nova análise
+                {"Nova an\u00e1lise"}
               </button>
             </div>
 
-            <h3 className="text-body-lg font-semibold mb-3">Campos extraídos</h3>
+            <h3 className="text-body-lg font-semibold mb-3">{"Campos extra\u00eddos"}</h3>
             <AnalysisCards analysis={result.analysis} />
           </section>
         )}
@@ -550,7 +549,7 @@ export default function App() {
       <footer className="bg-surface-container-lowest border-t border-outline-variant w-full mt-auto">
         <div className="flex flex-col md:flex-row justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-md max-w-max-width mx-auto gap-3">
           <div className="flex flex-col items-center md:items-start gap-2">
-            <span className="text-body-sm text-on-surface-variant">© 2026 AI Boot Camp.</span>
+            <span className="text-body-sm text-on-surface-variant">{"\u00a9 2026 AI Boot Camp."}</span>
             <div className="flex items-center gap-2">
               <span className="text-label-md text-on-surface-variant/80">Powered by</span>
               {showPoweredByLogo && (
@@ -586,4 +585,3 @@ export default function App() {
     </div>
   );
 }
-

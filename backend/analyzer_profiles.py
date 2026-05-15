@@ -207,6 +207,17 @@ ANALYZER_PROFILES = {
 }
 
 DEFAULT_ANALYZER_PROFILE_ID = "contract_risk_guard"
+DEFAULT_PROFILE_SCHEMA_VERSION = "1.0.0"
+
+_SCALAR_TEMPLATE_TYPE_MAP = {
+    "string": "string",
+    "number": "number",
+    "integer": "integer",
+    "boolean": "boolean",
+    "object": "object",
+    "array": "array",
+    "null": "null",
+}
 
 
 def _build_prompt(profile):
@@ -229,6 +240,9 @@ def _build_prompt(profile):
 def get_profile_or_default(profile_id):
     selected_id = (profile_id or "").strip()
     profile = ANALYZER_PROFILES.get(selected_id) or ANALYZER_PROFILES[DEFAULT_ANALYZER_PROFILE_ID]
+    if "schema_version" not in profile:
+        profile = deepcopy(profile)
+        profile["schema_version"] = DEFAULT_PROFILE_SCHEMA_VERSION
     return deepcopy(profile)
 
 
@@ -241,6 +255,7 @@ def list_profiles_summary():
                 "name": profile["name"],
                 "description": profile["description"],
                 "objective": profile["objective"],
+                "schema_version": profile.get("schema_version", DEFAULT_PROFILE_SCHEMA_VERSION),
             }
         )
     return summaries
@@ -248,4 +263,143 @@ def list_profiles_summary():
 
 def render_profile_prompt(profile):
     return _build_prompt(profile)
+
+
+def get_profile_schema_version(profile):
+    if not profile:
+        return DEFAULT_PROFILE_SCHEMA_VERSION
+    return profile.get("schema_version", DEFAULT_PROFILE_SCHEMA_VERSION)
+
+
+def _template_value_to_json_schema(template_value):
+    if isinstance(template_value, bool):
+        return {"type": "boolean"}
+
+    if isinstance(template_value, int) and not isinstance(template_value, bool):
+        return {"type": "integer"}
+
+    if isinstance(template_value, float):
+        return {"type": "number"}
+
+    if template_value is None:
+        return {"type": "null"}
+
+    if isinstance(template_value, list):
+        if len(template_value) == 0:
+            return {"type": "array", "items": {}}
+        return {
+            "type": "array",
+            "items": _template_value_to_json_schema(template_value[0]),
+        }
+
+    if isinstance(template_value, dict):
+        properties = {}
+        required = []
+        for key, nested_value in template_value.items():
+            properties[key] = _template_value_to_json_schema(nested_value)
+            required.append(key)
+
+        return {
+            "type": "object",
+            "properties": properties,
+            "required": required,
+            "additionalProperties": False,
+        }
+
+    if isinstance(template_value, str):
+        raw_value = template_value.strip()
+        if not raw_value:
+            return {"type": "string"}
+
+        if "|" in raw_value:
+            enum_values = [part.strip() for part in raw_value.split("|") if part.strip()]
+            if enum_values:
+                return {"type": "string", "enum": enum_values}
+
+        normalized = raw_value.lower()
+        scalar_type = _SCALAR_TEMPLATE_TYPE_MAP.get(normalized)
+        if scalar_type:
+            return {"type": scalar_type}
+
+        return {"type": "string"}
+
+    return {}
+
+
+def build_profile_json_schema(profile):
+    response_template = profile.get("response_template", {})
+    expected_fields = profile.get("expected_fields", [])
+
+    if not isinstance(response_template, dict):
+        raise ValueError("response_template do perfil deve ser um objeto JSON.")
+
+    property_descriptions = {}
+    for field in expected_fields:
+        name = field.get("name")
+        description = field.get("description")
+        if name and description:
+            property_descriptions[name] = description
+
+    properties = {}
+    required = []
+    for key, template_value in response_template.items():
+        field_schema = _template_value_to_json_schema(template_value)
+        description = property_descriptions.get(key)
+        if description and isinstance(field_schema, dict):
+            field_schema["description"] = description
+        properties[key] = field_schema
+        required.append(key)
+
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": f"{profile.get('id', 'analyzer_profile')}_analysis",
+        "type": "object",
+        "properties": properties,
+        "required": required,
+        "additionalProperties": False,
+    }
+
+
+def _json_schema_to_vertex_schema(schema_node):
+    if not isinstance(schema_node, dict):
+        return {}
+
+    vertex_schema = {}
+
+    node_type = schema_node.get("type")
+    if isinstance(node_type, str):
+        vertex_schema["type"] = node_type.upper()
+
+    if "description" in schema_node and isinstance(schema_node["description"], str):
+        vertex_schema["description"] = schema_node["description"]
+
+    if "enum" in schema_node and isinstance(schema_node["enum"], list):
+        vertex_schema["enum"] = schema_node["enum"]
+
+    if "properties" in schema_node and isinstance(schema_node["properties"], dict):
+        properties = {}
+        property_ordering = []
+        for key, child_schema in schema_node["properties"].items():
+            properties[key] = _json_schema_to_vertex_schema(child_schema)
+            property_ordering.append(key)
+
+        vertex_schema["properties"] = properties
+        if property_ordering:
+            vertex_schema["propertyOrdering"] = property_ordering
+
+    if "required" in schema_node and isinstance(schema_node["required"], list):
+        vertex_schema["required"] = schema_node["required"]
+
+    if "items" in schema_node:
+        vertex_schema["items"] = _json_schema_to_vertex_schema(schema_node["items"])
+
+    if schema_node.get("nullable") is True:
+        vertex_schema["nullable"] = True
+
+    return vertex_schema
+
+
+def build_profile_vertex_response_schema(profile):
+    json_schema = build_profile_json_schema(profile)
+    return _json_schema_to_vertex_schema(json_schema)
 

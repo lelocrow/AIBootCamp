@@ -1,31 +1,50 @@
 # AI Bootcamp Analyzer Template
 
-Template full-stack para bootcamp com Google Cloud, pronto para cada participante clonar, personalizar e publicar na propria conta GCP.
+Template full-stack para bootcamp com Google Cloud: cada participante clona, configura com a propria conta GCP, escolhe um perfil de analisador por IA e faz deploy no proprio Cloud Run.
 
-## O que este projeto faz
+## Objetivo do bootcamp
 
-- Frontend React para upload de PDF
-- Backend Flask para fila de processamento assincrono
-- Analise de documento com Vertex AI (Gemini)
-- Deploy em Cloud Run
+Ao final da atividade, cada participante tera:
+- 1 servico Cloud Run proprio
+- 1 bucket proprio para PDFs
+- 1 banco Postgres no Cloud SQL proprio
+- 1 analisador de documentos por IA com perfil configuravel
+- persistencia das analises no Postgres com validacao de schema antes de gravar
 
-## Resultado esperado para cada participante
+## Arquitetura resumida
 
-Ao final, cada participante tera:
-- Um servico Cloud Run proprio
-- Configuracao propria de projeto/bucket/modelo
-- Um perfil de analisador escolhido (ou customizado)
-- Endpoint funcionando com `/api/health`, `/api/config` e `/api/analyze`
+- Frontend: React (upload de PDF e exibicao da analise)
+- Backend: Flask (fila em memoria + integracao com Vertex AI e Cloud Storage)
+- IA: Gemini no Vertex AI
+- Dados: Cloud Storage (arquivo PDF) + Cloud SQL Postgres (resultado estruturado)
 
-## 1) Pre-requisitos (obrigatorio)
+## Como garantimos consistencia dos campos da IA
 
-Instalar e validar localmente:
+Este projeto aplica 3 camadas de protecao antes de salvar no banco:
+
+1. `response_schema` enviado ao Gemini (estrutura esperada na origem)
+2. validacao JSON Schema no backend (por perfil)
+3. tentativa automatica de reparo de JSON/schema quando a primeira resposta vem fora do formato
+
+Somente payload valido segue para persistencia.
+
+## Estrategia de banco para perfis diferentes
+
+Como cada perfil pode ter campos distintos, o banco usa:
+- colunas fixas de metadados (job, perfil, status, datas, etc.)
+- `analysis_json` (JSONB) para os campos dinamicos da analise
+
+Assim, voce troca de perfil sem quebrar o schema relacional.
+
+## 1) Pre-requisitos
+
+Instale e valide:
 
 - `git`
 - `gcloud` (Google Cloud CLI)
-- Conta GCP com permissao para Cloud Run, Cloud Build, Artifact Registry, Vertex AI e Cloud Storage
+- permissao GCP para: Cloud Run, Cloud Build, Artifact Registry, Vertex AI, Cloud Storage, Cloud SQL
 
-Comandos de validacao:
+Validacao:
 
 ```bash
 git --version
@@ -34,21 +53,12 @@ gcloud --version
 
 ## 2) Clonar o repositorio
 
-### Opcao A: HTTPS
-
 ```bash
-git clone <URL_DO_REPOSITORIO>
+git clone https://github.com/lelocrow/AIBootCamp.git
 cd AIBootCamp
 ```
 
-### Opcao B: SSH
-
-```bash
-git clone <URL_SSH_DO_REPOSITORIO>
-cd AIBootCamp
-```
-
-Validacao:
+Validar estrutura:
 
 ```bash
 ls
@@ -56,100 +66,132 @@ ls
 
 Voce deve ver: `backend`, `frontend`, `README.md`, `cloudrun.env.example`, `Dockerfile`.
 
-Validacao de assets do layout:
+## 3) Definir variaveis do terminal
 
-```bash
-ls frontend/public/assets
-```
-
-Voce deve ver pelo menos:
-- `gemini.png`
-- `gcloud.png`
-- `logo-servinformacion.png`
-
-## 3) Preparar a conta GCP do participante
-
-> Execute estes comandos com os valores da conta do proprio participante.
-> Recomendacao: use Cloud Shell (bash) para copiar os comandos exatamente como estao abaixo.
-
-### 3.1 Login no Google Cloud
-
-```bash
-gcloud auth login
-gcloud auth application-default login
-```
-
-### 3.2 Definir variaveis base
-
-Ajuste os valores conforme o participante:
+### Bash (Linux/macOS/Cloud Shell)
 
 ```bash
 PROJECT_ID="seu-project-id"
 REGION="us-central1"
 REPO_NAME="bootcamp-images"
-BUCKET_NAME="seu-bucket-unico-bootcamp"
-SERVICE_NAME="ai-bootcamp-analyzer"
 IMAGE_NAME="ai-bootcamp-analyzer"
+SERVICE_NAME="ai-bootcamp-analyzer"
+BUCKET_NAME="seu-bucket-unico-bootcamp"
+SQL_INSTANCE_NAME="bootcamp-pg"
+DB_NAME="bootcamp_analyzer"
+DB_USER="bootcamp_user"
+DB_PASS="troque-esta-senha"
 ```
 
-Se estiver no Windows PowerShell, use:
+### PowerShell (Windows)
 
 ```powershell
 $PROJECT_ID="seu-project-id"
 $REGION="us-central1"
 $REPO_NAME="bootcamp-images"
-$BUCKET_NAME="seu-bucket-unico-bootcamp"
-$SERVICE_NAME="ai-bootcamp-analyzer"
 $IMAGE_NAME="ai-bootcamp-analyzer"
+$SERVICE_NAME="ai-bootcamp-analyzer"
+$BUCKET_NAME="seu-bucket-unico-bootcamp"
+$SQL_INSTANCE_NAME="bootcamp-pg"
+$DB_NAME="bootcamp_analyzer"
+$DB_USER="bootcamp_user"
+$DB_PASS="troque-esta-senha"
 ```
 
-### 3.3 Apontar gcloud para o projeto
+## 4) Preparar GCP do participante
+
+### 4.1 Selecionar projeto
 
 ```bash
 gcloud config set project "$PROJECT_ID"
 ```
 
-### 3.4 Habilitar APIs necessarias
+### 4.2 Habilitar APIs
 
 ```bash
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com aiplatform.googleapis.com storage.googleapis.com
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com aiplatform.googleapis.com storage.googleapis.com sqladmin.googleapis.com
 ```
 
-### 3.5 Criar repositorio do Artifact Registry
+### 4.3 Criar Artifact Registry (Docker)
 
 ```bash
 gcloud artifacts repositories create "$REPO_NAME" --repository-format=docker --location="$REGION" --description="Bootcamp Docker images"
 ```
 
-Se o repositorio ja existir, pode ignorar o erro.
+Se ja existir, pode ignorar o erro.
 
-### 3.6 Criar bucket de upload de PDFs
+### 4.4 Criar bucket para PDFs
 
 ```bash
 gcloud storage buckets create "gs://$BUCKET_NAME" --location="$REGION" --uniform-bucket-level-access
 ```
 
-Se o bucket ja existir, ajuste para um nome unico e tente novamente.
+## 5) Criar Cloud SQL Postgres (modo rapido para sala)
 
-## 4) Configurar o arquivo de ambiente do participante
+Observacao importante: Cloud SQL sempre usa "instancia". Para o bootcamp, use uma instancia unica pequena, apenas para laboratorio.
 
-### 4.1 Criar `cloudrun.env`
-
-Linux/macOS:
+### 5.1 Criar instancia Postgres
 
 ```bash
-cp cloudrun.env.example cloudrun.env
+gcloud sql instances create "$SQL_INSTANCE_NAME" --database-version=POSTGRES_16 --tier=db-custom-1-3840 --region="$REGION" --storage-size=10 --storage-auto-increase
 ```
 
-Windows PowerShell:
+### 5.2 Criar database
+
+```bash
+gcloud sql databases create "$DB_NAME" --instance="$SQL_INSTANCE_NAME"
+```
+
+### 5.3 Criar usuario
+
+```bash
+gcloud sql users create "$DB_USER" --instance="$SQL_INSTANCE_NAME" --password="$DB_PASS"
+```
+
+### 5.4 Obter connection name da instancia
+
+#### Bash
+
+```bash
+CLOUDSQL_INSTANCE_CONNECTION_NAME=$(gcloud sql instances describe "$SQL_INSTANCE_NAME" --format='value(connectionName)')
+echo "$CLOUDSQL_INSTANCE_CONNECTION_NAME"
+```
+
+#### PowerShell
 
 ```powershell
-Copy-Item cloudrun.env.example cloudrun.env
+$CLOUDSQL_INSTANCE_CONNECTION_NAME=gcloud sql instances describe $SQL_INSTANCE_NAME --format="value(connectionName)"
+Write-Output $CLOUDSQL_INSTANCE_CONNECTION_NAME
 ```
 
-### 4.2 Editar `cloudrun.env`
+### 5.5 Dar permissao Cloud SQL Client para o runtime do Cloud Run
 
-Preencha sem deixar placeholders:
+#### Bash
+
+```bash
+PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
+RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:${RUNTIME_SA}" --role="roles/cloudsql.client"
+```
+
+#### PowerShell
+
+```powershell
+$PROJECT_NUMBER=gcloud projects describe $PROJECT_ID --format="value(projectNumber)"
+$RUNTIME_SA="$PROJECT_NUMBER-compute@developer.gserviceaccount.com"
+gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$RUNTIME_SA" --role="roles/cloudsql.client"
+```
+
+## 6) Configurar `cloudrun.env`
+
+### 6.1 Criar arquivo
+
+- Linux/macOS: `cp cloudrun.env.example cloudrun.env`
+- PowerShell: `Copy-Item cloudrun.env.example cloudrun.env`
+
+### 6.2 Preencher valores obrigatorios
+
+Exemplo minimo recomendado:
 
 ```env
 BOOTCAMP_ORG_NAME=Empresa_Convidada
@@ -162,168 +204,155 @@ VERTEX_LOCATION=us-central1
 GCS_BUCKET_NAME=seu-bucket-unico-para-pdfs
 GEMINI_MODEL_NAME=gemini-2.5-flash
 
-GCS_UPLOAD_PREFIX=uploads
-MAX_UPLOAD_SIZE_MB=25
-MAX_QUEUE_SIZE=20
-MAX_STORED_JOBS=300
-JOB_RETENTION_SECONDS=3600
-MAX_OUTPUT_TOKENS=8192
-GENERATION_TEMPERATURE=0.1
+POSTGRES_ENABLED=true
+CLOUDSQL_INSTANCE_CONNECTION_NAME=seu-project:us-central1:bootcamp-pg
+POSTGRES_DATABASE=bootcamp_analyzer
+POSTGRES_USER=bootcamp_user
+POSTGRES_PASSWORD=sua_senha
+POSTGRES_PORT=5432
+POSTGRES_SSLMODE=disable
+POSTGRES_AUTO_CREATE_TABLES=true
+POSTGRES_CONNECT_TIMEOUT_SECONDS=10
+
 PROMPT_REFERENCE_TIMEZONE=America/Sao_Paulo
+SCHEMA_REPAIR_MAX_RETRIES=1
 ```
 
-### 4.3 Validacao obrigatoria antes do deploy
+### 6.3 Logo obrigatoria da empresa convidada
 
-Confirme:
-- `SERVICE_NAME` no arquivo = nome que voce usara no comando `gcloud run deploy`
-- `VERTEX_PROJECT_ID` = mesmo `PROJECT_ID` configurado no gcloud
-- `GCS_BUCKET_NAME` = bucket criado na etapa 3.6
-- `ANALYZER_PROFILE_ID` = um perfil existente em `backend/analyzer_profiles.py`
-- `PROMPT_REFERENCE_TIMEZONE` = timezone valida (ex.: `America/Sao_Paulo`) para ancorar a data real no prompt da IA
+Coloque a logo no caminho abaixo com nome exato:
 
-### 4.4 Logo obrigatoria da empresa convidada
-
-Cada empresa convidada deve fornecer sua logo com o nome exato `logo.png`.
-
-Local obrigatorio:
 - `frontend/public/assets/logo.png`
 
-Comandos para copiar a logo:
+Se nao existir, o topo mostra placeholder `LOGO`.
 
-Linux/macOS:
+## 7) Build da imagem
+
+### 7.1 Criar TAG da imagem
+
+#### Bash
 
 ```bash
-cp /caminho/da/sua/logo.png frontend/public/assets/logo.png
+TAG="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:latest"
+echo "$TAG"
 ```
 
-Windows PowerShell:
+#### PowerShell
 
 ```powershell
-Copy-Item C:\caminho\da\sua\logo.png frontend\public\assets\logo.png
+$TAG="{0}-docker.pkg.dev/{1}/{2}/{3}:latest" -f $REGION, $PROJECT_ID, $REPO_NAME, $IMAGE_NAME
+Write-Output $TAG
 ```
 
-Se `logo.png` nao estiver nesse caminho, o layout mostra um placeholder `LOGO` no topo.
+### 7.2 Validar se TAG nao ficou vazia
 
-Perfis prontos:
+Se a TAG aparecer com barra no final (sem nome de imagem), revise variaveis, principalmente `IMAGE_NAME`.
+
+### 7.3 Submeter build
+
+```bash
+gcloud builds submit --tag "$TAG"
+```
+
+## 8) Deploy no Cloud Run
+
+```bash
+gcloud run deploy "$SERVICE_NAME" --image "$TAG" --region "$REGION" --platform managed --allow-unauthenticated --port 8080 --cpu 2 --memory 2Gi --concurrency 20 --min-instances 0 --max-instances 1 --no-cpu-throttling --timeout 3600 --env-vars-file cloudrun.env --add-cloudsql-instances "$CLOUDSQL_INSTANCE_CONNECTION_NAME"
+```
+
+Observacao importante:
+- este projeto usa fila em memoria no container
+- mantenha `--max-instances=1` para evitar inconsistencias entre instancias
+
+## 9) Validacao pos-deploy
+
+### 9.1 Obter URL do servico
+
+```bash
+gcloud run services describe "$SERVICE_NAME" --region "$REGION" --format='value(status.url)'
+```
+
+Copie a URL retornada e teste:
+
+- `/api/health`
+- `/api/config`
+- `/api/postgres/health`
+
+Exemplo:
+
+```text
+https://SEU-SERVICO.run.app/api/health
+https://SEU-SERVICO.run.app/api/config
+https://SEU-SERVICO.run.app/api/postgres/health
+```
+
+### 9.2 Teste funcional
+
+1. Abra a URL principal no navegador.
+2. Envie um PDF.
+3. Aguarde a analise finalizar.
+4. Confirme retorno na UI.
+5. Confirme no `/api/postgres/health` que o Postgres esta ativo.
+
+## 10) Perfis de analisador disponiveis
+
+Defina em `ANALYZER_PROFILE_ID`:
+
 - `contract_risk_guard`
 - `invoice_audit_assistant`
 - `resume_screening_copilot`
 - `support_ticket_triage`
 - `policy_compliance_reviewer`
-- `customizado` (perfil base para criar manualmente seu proprio analisador)
+- `customizado`
 
-## 5) Build e push da imagem para Artifact Registry
+Arquivo para customizacao completa:
+- `backend/analyzer_profiles.py`
 
-Linux/macOS (bash):
+## 11) Principais pontos de customizacao por participante/empresa
 
-```bash
-TAG="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:latest"
-echo "$TAG"
-gcloud builds submit --tag "$TAG"
-```
+- identidade visual e texto:
+  - `BOOTCAMP_ORG_NAME`
+  - `BOOTCAMP_PARTICIPANT_NAME`
+  - `frontend/public/assets/logo.png`
+- GCP do participante:
+  - `VERTEX_PROJECT_ID`
+  - `GCS_BUCKET_NAME`
+  - `CLOUDSQL_INSTANCE_CONNECTION_NAME`
+  - credenciais Postgres
+- comportamento do analisador:
+  - `ANALYZER_PROFILE_ID`
+  - `backend/analyzer_profiles.py` (prompt, campos esperados e template)
 
-Windows PowerShell:
+## 12) Erros comuns
 
-```powershell
-$TAG = "{0}-docker.pkg.dev/{1}/{2}/{3}:latest" -f $REGION, $PROJECT_ID, $REPO_NAME, $IMAGE_NAME
-Write-Output $TAG
-gcloud builds submit --tag $TAG
-```
+### Erro no build: `invalid reference format`
 
-## 6) Deploy no Cloud Run
-
-Use o mesmo `SERVICE_NAME` definido no `cloudrun.env`.
-
-Linux/macOS e PowerShell:
-
-```bash
-gcloud run deploy "$SERVICE_NAME" --image "$TAG" --region "$REGION" --platform managed --allow-unauthenticated --port 8080 --cpu 2 --memory 2Gi --concurrency 20 --min-instances 0 --max-instances 1 --no-cpu-throttling --timeout 3600 --env-vars-file cloudrun.env
-```
-
-Observacao importante:
-- Este projeto usa fila em memoria no proprio container.
-- Mantenha `--max-instances=1` para evitar inconsistencias de estado entre instancias.
-
-## 7) Validacao pos-deploy
-
-### 7.1 Obter URL do servico
-
-```bash
-SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region "$REGION" --format='value(status.url)')
-echo "$SERVICE_URL"
-```
-
-Windows PowerShell:
-
-```powershell
-$SERVICE_URL=gcloud run services describe $SERVICE_NAME --region $REGION --format="value(status.url)"
-Write-Output $SERVICE_URL
-```
-
-### 7.2 Testar endpoints no Cloud Run
-
-```bash
-curl "$SERVICE_URL/api/health"
-curl "$SERVICE_URL/api/config"
-```
-
-### 7.3 Teste funcional completo
-
-1. Abrir `SERVICE_URL` no navegador.
-2. Fazer upload de um PDF.
-3. Confirmar que a analise termina e retorna JSON.
-
-## 8) Onde personalizar prompt e campos esperados
-
-Arquivos principais:
-- Prompt, schema e perfis: `backend/analyzer_profiles.py`
-- Carregamento de env e perfil ativo: `backend/main.py`
-- Exibicao didatica de prompt/campos na interface: `frontend/src/App.jsx`
-
-## 9) Erros comuns e como corrigir
-
-### Erro: `403` em Vertex AI
-
-Causa comum: projeto errado ou API nao habilitada.
+Causa comum: `TAG` montada com variavel vazia (ex.: `IMAGE_NAME` vazio).
 
 Correcao:
-- revisar `VERTEX_PROJECT_ID`
-- executar novamente `gcloud config set project ...`
-- garantir `aiplatform.googleapis.com` habilitada
+- valide `PROJECT_ID`, `REGION`, `REPO_NAME`, `IMAGE_NAME`
+- imprima a TAG antes de executar o build
 
-### Erro: bucket nao encontrado
+### Erro de conexao com Postgres no Cloud Run
 
-Causa comum: `GCS_BUCKET_NAME` diferente do bucket criado.
+Causas comuns:
+- faltou `--add-cloudsql-instances` no deploy
+- `CLOUDSQL_INSTANCE_CONNECTION_NAME` incorreto
+- service account sem `roles/cloudsql.client`
 
-Correcao:
-- conferir nome exato no `cloudrun.env`
-- conferir se bucket existe: `gcloud storage ls`
+### Erro de configuracao no backend
 
-### Erro: `ANALYZER_PROFILE_ID` invalido
+Revise `cloudrun.env` e compare com `cloudrun.env.example`.
 
-Causa comum: id digitado incorretamente.
+## 13) Checklist final do participante
 
-Correcao:
-- usar um dos ids listados na secao de perfis
-- validar em `/api/config` qual perfil ficou ativo
-
-### Erro: timeout durante analise
-
-Causa comum: PDF muito pesado ou modelo demorando resposta.
-
-Correcao:
-- testar com arquivo menor
-- revisar limite `MAX_UPLOAD_SIZE_MB`
-
-## 10) Checklist final do participante
-
-1. Clonei o repositorio e entrei na pasta correta.
-2. Configurei `PROJECT_ID`, `REGION`, `REPO_NAME`, `BUCKET_NAME`.
-3. Habilitei as APIs necessarias.
-4. Criei Artifact Registry e bucket.
-5. Criei e preenchi `cloudrun.env` sem placeholders.
-6. Validei `/api/config` na URL publica.
-7. Fiz build/push da imagem.
-8. Fiz deploy no Cloud Run.
-9. Testei `/api/health` e `/api/config` na URL publica.
-10. Executei upload de PDF com sucesso.
+1. Clonei o repositorio e entrei em `AIBootCamp`.
+2. Configurei variaveis de terminal (`PROJECT_ID`, `REGION`, etc.).
+3. Habilitei APIs obrigatorias (incluindo `sqladmin.googleapis.com`).
+4. Criei Artifact Registry, bucket e Cloud SQL Postgres.
+5. Preenchi `cloudrun.env` com dados da minha conta.
+6. Coloquei `frontend/public/assets/logo.png`.
+7. Build da imagem concluido.
+8. Deploy no Cloud Run concluido com Cloud SQL conectado.
+9. `/api/health`, `/api/config` e `/api/postgres/health` respondendo.
+10. Upload e analise de PDF funcionando na UI.

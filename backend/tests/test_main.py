@@ -1,4 +1,5 @@
 import io
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -230,9 +231,23 @@ def test_process_analysis_job_success_with_mocks(monkeypatch):
             runtime_prompt = _prompt_parts[1]
             assert "Data de referencia atual" in runtime_prompt
             assert "Timezone de referencia efetiva" in runtime_prompt
-            return SimpleNamespace(
-                text='{"document_title":"Documento Teste","executive_summary":"ok"}'
-            )
+            payload = {
+                "document_title": "Documento Teste",
+                "executive_summary": "Resumo objetivo",
+                "parties": [{"role": "contratante", "name": "Empresa A", "document": "00.000.000/0001-00"}],
+                "key_obligations": [{"owner": "Empresa A", "obligation": "Entregar servico", "deadline": "2026-01-10"}],
+                "critical_clauses": [{"clause": "Multa", "impact": "Financeiro", "attention_level": "medium"}],
+                "risk_alerts": [
+                    {
+                        "level": "low",
+                        "category": "operational",
+                        "description": "Risco baixo identificado",
+                        "mitigation": "Monitorar",
+                    }
+                ],
+                "action_checklist": [{"item": "Validar assinatura", "status": "ok", "next_step": "Arquivar"}],
+            }
+            return SimpleNamespace(text=json.dumps(payload))
 
     temp_pdf = Path(ROOT_DIR / "backend" / "tests" / "temp_test.pdf")
     temp_pdf.write_bytes(b"%PDF-1.4 fake")
