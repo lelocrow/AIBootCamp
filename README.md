@@ -1,57 +1,57 @@
 # AI Bootcamp Analyzer Template
 
-Template full-stack para bootcamp com Google Cloud: cada participante clona, configura com a própria conta GCP, escolhe um perfil de analisador por IA e faz deploy no próprio Cloud Run.
+Template full-stack para bootcamp com Google Cloud: cada participante clona, configura com a prÃƒÂ³pria conta GCP, escolhe um perfil de analisador por IA e faz deploy no prÃƒÂ³prio Cloud Run.
 
 ## Objetivo do bootcamp
 
-Ao final da atividade, cada participante terá:
-- 1 serviço Cloud Run próprio
-- 1 bucket próprio para PDFs
-- 1 banco Postgres no Cloud SQL próprio
-- 1 analisador de documentos por IA com perfil configurável
-- persistência das análises no Postgres com validação de schema antes de gravar
+Ao final da atividade, cada participante terÃƒÂ¡:
+- 1 serviÃƒÂ§o Cloud Run prÃƒÂ³prio
+- 1 bucket prÃƒÂ³prio para PDFs
+- 1 banco Postgres no Cloud SQL prÃƒÂ³prio
+- 1 analisador de documentos por IA com perfil configurÃƒÂ¡vel
+- persistÃƒÂªncia das anÃƒÂ¡lises no Postgres com validaÃƒÂ§ÃƒÂ£o de schema antes de gravar
 
 ## Arquitetura resumida
 
-- Frontend: React (upload de PDF e exibição da análise)
-- Backend: Flask (fila em memória + integração com Vertex AI e Cloud Storage)
+- Frontend: React (upload de PDF e exibiÃƒÂ§ÃƒÂ£o da anÃƒÂ¡lise)
+- Backend: Flask (fila em memÃƒÂ³ria + integraÃƒÂ§ÃƒÂ£o com Vertex AI e Cloud Storage)
 - IA: Gemini no Vertex AI
 - Dados: Cloud Storage (arquivo PDF) + Cloud SQL Postgres (resultado estruturado)
 
-## Como garantimos consistência dos campos da IA
+## Como garantimos consistÃƒÂªncia dos campos da IA
 
-Este projeto aplica 3 camadas de proteção antes de salvar no banco:
+Este projeto aplica 3 camadas de proteÃƒÂ§ÃƒÂ£o antes de salvar no banco:
 
 1. `response_schema` enviado ao Gemini (estrutura esperada na origem)
-2. validação JSON Schema no backend (por perfil)
-3. tentativa automática de reparo de JSON/schema quando a primeira resposta vem fora do formato
+2. validaÃƒÂ§ÃƒÂ£o JSON Schema no backend (por perfil)
+3. tentativa automÃƒÂ¡tica de reparo de JSON/schema quando a primeira resposta vem fora do formato
 
-Somente payload válido segue para persistência.
+Somente payload vÃƒÂ¡lido segue para persistÃƒÂªncia.
 
-## Estratégia de banco para perfis diferentes
+## EstratÃƒÂ©gia de banco para perfis diferentes
 
 Como cada perfil pode ter campos distintos, o banco usa:
 - colunas fixas de metadados (job, perfil, status, datas etc.)
-- `analysis_json` (JSONB) para os campos dinâmicos da análise
+- `analysis_json` (JSONB) para os campos dinÃƒÂ¢micos da anÃƒÂ¡lise
 
-Assim, você troca de perfil sem quebrar o schema relacional.
+Assim, vocÃƒÂª troca de perfil sem quebrar o schema relacional.
 
-## 1) Pré-requisitos
+## 1) PrÃƒÂ©-requisitos
 
 Instale e valide:
 
 - `git`
 - `gcloud` (Google Cloud CLI)
-- permissão GCP para: Cloud Run, Cloud Build, Artifact Registry, Vertex AI, Cloud Storage e Cloud SQL
+- permissÃƒÂ£o GCP para: Cloud Run, Cloud Build, Artifact Registry, Vertex AI, Cloud Storage e Cloud SQL
 
-Validação:
+ValidaÃƒÂ§ÃƒÂ£o:
 
 ```bash
 git --version
 gcloud --version
 ```
 
-## 2) Clonar o repositório
+## 2) Clonar o repositÃƒÂ³rio
 
 ```bash
 git clone https://github.com/lelocrow/AIBootCamp.git
@@ -64,9 +64,9 @@ Validar estrutura:
 ls
 ```
 
-Você deve ver: `backend`, `frontend`, `README.md`, `cloudrun.env.example`, `Dockerfile`.
+VocÃƒÂª deve ver: `backend`, `frontend`, `README.md`, `cloudrun.env.example`, `Dockerfile`.
 
-## 3) Definir variáveis do terminal
+## 3) Definir variÃƒÂ¡veis do terminal
 
 ### Bash (Linux/macOS/Cloud Shell)
 
@@ -118,7 +118,7 @@ gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregi
 gcloud artifacts repositories create "$REPO_NAME" --repository-format=docker --location="$REGION" --description="Bootcamp Docker images"
 ```
 
-Se já existir, pode ignorar o erro.
+Se jÃƒÂ¡ existir, pode ignorar o erro.
 
 ### 4.4 Criar bucket para PDFs
 
@@ -128,7 +128,7 @@ gcloud storage buckets create "gs://$BUCKET_NAME" --location="$REGION" --uniform
 
 ## 5) Criar Cloud SQL Postgres
 
-### 5.1 Criar instância Postgres
+### 5.1 Criar instÃƒÂ¢ncia Postgres
 
 ```bash
 gcloud sql instances create "$SQL_INSTANCE_NAME" --database-version=POSTGRES_16 --tier=db-custom-1-3840 --region="$REGION" --storage-size=10 --storage-auto-increase
@@ -140,13 +140,13 @@ gcloud sql instances create "$SQL_INSTANCE_NAME" --database-version=POSTGRES_16 
 gcloud sql databases create "$DB_NAME" --instance="$SQL_INSTANCE_NAME"
 ```
 
-### 5.3 Criar usuário
+### 5.3 Criar usuÃƒÂ¡rio
 
 ```bash
 gcloud sql users create "$DB_USER" --instance="$SQL_INSTANCE_NAME" --password="$DB_PASS"
 ```
 
-### 5.4 Obter connection name da instância
+### 5.4 Obter connection name da instÃƒÂ¢ncia
 
 #### Bash
 
@@ -162,7 +162,7 @@ $CLOUDSQL_INSTANCE_CONNECTION_NAME=gcloud sql instances describe $SQL_INSTANCE_N
 Write-Output $CLOUDSQL_INSTANCE_CONNECTION_NAME
 ```
 
-### 5.5 Dar permissão Cloud SQL Client para o runtime do Cloud Run
+### 5.5 Dar permissÃƒÂ£o Cloud SQL Client para o runtime do Cloud Run
 
 #### Bash
 
@@ -187,9 +187,9 @@ gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$RUN
 - Linux/macOS: `cp cloudrun.env.example cloudrun.env`
 - PowerShell: `Copy-Item cloudrun.env.example cloudrun.env`
 
-### 6.2 Preencher valores obrigatórios
+### 6.2 Preencher valores obrigatÃƒÂ³rios
 
-Exemplo mínimo recomendado:
+Exemplo mÃƒÂ­nimo recomendado:
 
 ```env
 BOOTCAMP_ORG_NAME=Empresa_Convidada
@@ -216,13 +216,13 @@ PROMPT_REFERENCE_TIMEZONE=America/Sao_Paulo
 SCHEMA_REPAIR_MAX_RETRIES=1
 ```
 
-### 6.3 Logo obrigatória da empresa convidada
+### 6.3 Logo obrigatÃƒÂ³ria da empresa convidada
 
 Coloque a logo no caminho abaixo com nome exato:
 
 - `frontend/public/assets/logo.png`
 
-Se não existir, o topo mostra o placeholder `LOGO`.
+Se nÃƒÂ£o existir, o topo mostra o placeholder `LOGO`.
 
 ## 7) Build da imagem
 
@@ -242,11 +242,7 @@ $TAG="{0}-docker.pkg.dev/{1}/{2}/{3}:latest" -f $REGION, $PROJECT_ID, $REPO_NAME
 Write-Output $TAG
 ```
 
-### 7.2 Validar se TAG não ficou vazia
-
-Se a TAG aparecer com barra no final (sem nome de imagem), revise variáveis, principalmente `IMAGE_NAME`.
-
-### 7.3 Submeter build
+### 7.2 Submeter build
 
 ```bash
 gcloud builds submit --tag "$TAG"
@@ -258,19 +254,23 @@ gcloud builds submit --tag "$TAG"
 gcloud run deploy "$SERVICE_NAME" --image "$TAG" --region "$REGION" --platform managed --allow-unauthenticated --port 8080 --cpu 2 --memory 2Gi --concurrency 20 --min-instances 0 --max-instances 1 --no-cpu-throttling --timeout 3600 --env-vars-file cloudrun.env --add-cloudsql-instances "$CLOUDSQL_INSTANCE_CONNECTION_NAME"
 ```
 
-Observação importante:
-- este projeto usa fila em memória no container
-- mantenha `--max-instances=1` para evitar inconsistências entre instâncias
+ObservaÃƒÂ§ÃƒÂ£o importante:
+- este projeto usa fila em memÃƒÂ³ria no container
+- mantenha `--max-instances=1` para evitar inconsistÃƒÂªncias entre instÃƒÂ¢ncias
 
-## 9) Validação pós-deploy
+## 9) ValidaÃƒÂ§ÃƒÂ£o pÃƒÂ³s-deploy
 
-### 9.1 Obter URL do serviço
+### 9.1 URL do servico (opcional)
+
+A URL ja aparece automaticamente no final do comando `gcloud run deploy`.
+
+Se precisar consultar depois, rode:
 
 ```bash
 gcloud run services describe "$SERVICE_NAME" --region "$REGION" --format='value(status.url)'
 ```
 
-Copie a URL retornada e teste:
+Copie a URL e teste:
 
 - `/api/health`
 - `/api/config`
@@ -288,11 +288,11 @@ https://SEU-SERVICO.run.app/api/postgres/health
 
 1. Abra a URL principal no navegador.
 2. Envie um PDF.
-3. Aguarde a análise finalizar.
+3. Aguarde a anÃƒÂ¡lise finalizar.
 4. Confirme retorno na UI.
-5. Confirme no `/api/postgres/health` que o Postgres está ativo.
+5. Confirme no `/api/postgres/health` que o Postgres estÃƒÂ¡ ativo.
 
-## 10) Perfis de analisador disponíveis
+## 10) Perfis de analisador disponÃƒÂ­veis
 
 Defina em `ANALYZER_PROFILE_ID`:
 
@@ -303,10 +303,10 @@ Defina em `ANALYZER_PROFILE_ID`:
 - `policy_compliance_reviewer`
 - `customizado`
 
-Arquivo para customização completa:
+Arquivo para customizaÃƒÂ§ÃƒÂ£o completa:
 - `backend/analyzer_profiles.py`
 
-## 11) Principais pontos de customização por participante/empresa
+## 11) Principais pontos de customizaÃƒÂ§ÃƒÂ£o por participante/empresa
 
 - identidade visual e texto:
   - `BOOTCAMP_ORG_NAME`
@@ -325,32 +325,32 @@ Arquivo para customização completa:
 
 ### Erro no build: `invalid reference format`
 
-Causa comum: `TAG` montada com variável vazia (ex.: `IMAGE_NAME` vazio).
+Causa comum: `TAG` montada com variÃƒÂ¡vel vazia (ex.: `IMAGE_NAME` vazio).
 
-Correção:
+CorreÃƒÂ§ÃƒÂ£o:
 - valide `PROJECT_ID`, `REGION`, `REPO_NAME`, `IMAGE_NAME`
 - imprima a TAG antes de executar o build
 
-### Erro de conexão com Postgres no Cloud Run
+### Erro de conexÃƒÂ£o com Postgres no Cloud Run
 
 Causas comuns:
 - faltou `--add-cloudsql-instances` no deploy
 - `CLOUDSQL_INSTANCE_CONNECTION_NAME` incorreto
 - service account sem `roles/cloudsql.client`
 
-### Erro de configuração no backend
+### Erro de configuraÃƒÂ§ÃƒÂ£o no backend
 
 Revise `cloudrun.env` e compare com `cloudrun.env.example`.
 
 ## 13) Checklist final do participante
 
-1. Clonei o repositório e entrei em `AIBootCamp`.
-2. Configurei variáveis de terminal (`PROJECT_ID`, `REGION` etc.).
-3. Habilitei APIs obrigatórias (incluindo `sqladmin.googleapis.com`).
+1. Clonei o repositÃƒÂ³rio e entrei em `AIBootCamp`.
+2. Configurei variÃƒÂ¡veis de terminal (`PROJECT_ID`, `REGION` etc.).
+3. Habilitei APIs obrigatÃƒÂ³rias (incluindo `sqladmin.googleapis.com`).
 4. Criei Artifact Registry, bucket e Cloud SQL Postgres.
 5. Preenchi `cloudrun.env` com dados da minha conta.
 6. Coloquei `frontend/public/assets/logo.png`.
-7. Build da imagem concluído.
-8. Deploy no Cloud Run concluído com Cloud SQL conectado.
+7. Build da imagem concluÃƒÂ­do.
+8. Deploy no Cloud Run concluÃƒÂ­do com Cloud SQL conectado.
 9. `/api/health`, `/api/config` e `/api/postgres/health` respondendo.
-10. Upload e análise de PDF funcionando na UI.
+10. Upload e anÃƒÂ¡lise de PDF funcionando na UI.
