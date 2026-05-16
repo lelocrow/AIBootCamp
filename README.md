@@ -68,6 +68,8 @@ Você deve ver: `backend`, `frontend`, `README.md`, `cloudrun.env.example`, `Doc
 
 ## 3) Definir variáveis do terminal
 
+Importante: execute os comandos desta seção no mesmo terminal até finalizar o deploy, para manter as variáveis disponíveis.
+
 ### Bash (Linux/macOS/Cloud Shell)
 
 ```bash
@@ -100,19 +102,28 @@ $DB_PASS="troque-esta-senha"
 
 ## 4) Preparar GCP do participante
 
-### 4.1 Selecionar projeto
+### 4.1 Autenticar no Google Cloud
+
+```bash
+gcloud auth login
+gcloud auth application-default login
+```
+
+Se você estiver usando o Cloud Shell, normalmente essa autenticação já estará ativa.
+
+### 4.2 Selecionar projeto
 
 ```bash
 gcloud config set project "$PROJECT_ID"
 ```
 
-### 4.2 Habilitar APIs
+### 4.3 Habilitar APIs
 
 ```bash
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com aiplatform.googleapis.com storage.googleapis.com sqladmin.googleapis.com
 ```
 
-### 4.3 Criar Artifact Registry (Docker)
+### 4.4 Criar Artifact Registry (Docker)
 
 ```bash
 gcloud artifacts repositories create "$REPO_NAME" --repository-format=docker --location="$REGION" --description="Bootcamp Docker images"
@@ -120,7 +131,7 @@ gcloud artifacts repositories create "$REPO_NAME" --repository-format=docker --l
 
 Se já existir, pode ignorar o erro.
 
-### 4.4 Criar bucket para PDFs
+### 4.5 Criar bucket para PDFs
 
 ```bash
 gcloud storage buckets create "gs://$BUCKET_NAME" --location="$REGION" --uniform-bucket-level-access
